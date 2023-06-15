@@ -11,5 +11,7 @@ data "http" "myip" {
 locals {
 
   rdsadmin_password = data.aws_secretsmanager_secret_version.rdsadmin_password.secret_string
-  asg_image_id      = "ami-053b0d53c279acc90"
+  asg_image_id      = var.asg_image_id
+  asg_instance_type = var.asg_instance_type
+
 }

@@ -151,3 +151,113 @@ module "lb_security_group" {
     Environment = "${var.name}"
   }
 }
+
+
+module "nginx_alb" {
+  source = "./modules/alb"
+
+  name = "${var.name}-nginx-alb"
+
+  vpc_id          = module.nginx_vpc.vpc_id
+  subnets         = module.nginx_vpc.public_subnets
+  security_groups = [module.lb_security_group.security_group_id]
+
+  http_tcp_listeners = [
+    {
+      port               = 80
+      protocol           = "HTTP"
+      target_group_index = 0
+    }
+  ]
+
+  target_groups = [
+    {
+      name             = "${var.name}-nginxlb-targetgp"
+      backend_protocol = "HTTP"
+      backend_port     = 80
+      target_type      = "instance"
+    },
+  ]
+
+  tags = {
+    provisioner = "Terraform"
+    Environment = "${var.name}"
+  }
+}
+
+
+module "nginx_mysqldb" {
+  source = "./modules/mysqldb"
+
+  identifier = "${var.name}-nginx-mysqldb"
+
+  engine            = "mysql"
+  engine_version    = "8.0"
+  instance_class    = "db.m5d.large"
+  allocated_storage = 5
+
+  db_name  = "nginxwebdb"
+  username = "dbadmin"
+  password = local.rdsadmin_password
+  port     = "3306"
+
+  iam_database_authentication_enabled = true
+  vpc_security_group_ids              = [module.db_security_group.security_group_id]
+
+  maintenance_window = "Mon:00:00-Mon:03:00"
+  backup_window      = "03:00-06:00"
+
+  # Enhanced Monitoring - see example for details on how to create the role
+  # by yourself, in case you don't want to create it automatically
+  monitoring_interval    = "30"
+  monitoring_role_name   = "${var.name}-MyRDSMonitoringRole"
+  create_monitoring_role = true
+
+  tags = {
+
+    provisioner = "Terraform"
+    Environment = "${var.name}"
+
+  }
+
+  # DB subnet group
+  create_db_subnet_group = true
+  subnet_ids             = module.nginx_vpc.database_subnets
+
+  # DB parameter group
+  family = "mysql8.0"
+
+  # DB option group
+  major_engine_version = "8.0"
+
+  # Database Deletion Protection
+  deletion_protection = true
+
+  parameters = [
+    {
+      name  = "character_set_client"
+      value = "utf8mb4"
+    },
+    {
+      name  = "character_set_server"
+      value = "utf8mb4"
+    }
+  ]
+
+  options = [
+    {
+      option_name = "MARIADB_AUDIT_PLUGIN"
+
+      option_settings = [
+        {
+          name  = "SERVER_AUDIT_EVENTS"
+          value = "CONNECT"
+        },
+        {
+          name  = "SERVER_AUDIT_FILE_ROTATIONS"
+          value = "37"
+        },
+      ]
+    },
+  ]
+}

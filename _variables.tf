@@ -1,4 +1,8 @@
 variable "region" {}
+variable "bastion_ami" {}
+variable "bastion_instance_type" {}
+variable "asg_image_id" {}
+variable "asg_instance_type" {}
 
 variable "azs" {
   description = "A list of availability zones names or ids in the region"
