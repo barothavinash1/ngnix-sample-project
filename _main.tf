@@ -63,8 +63,8 @@ module "ec2_security_group" {
   # ingress
   ingress_with_cidr_blocks = [
     {
-      from_port   = 80
-      to_port     = 80
+      from_port   = 22
+      to_port     = 22
       protocol    = "tcp"
       description = "Mysql access from within VPC"
       cidr_blocks = module.nginx_vpc.vpc_cidr_block
@@ -129,10 +129,10 @@ module "lb_security_group" {
   # ingress
   ingress_with_cidr_blocks = [
     {
-      from_port   = 80
-      to_port     = 80
+      from_port   = 443
+      to_port     = 443
       protocol    = "tcp"
-      description = "HTTP access from outside"
+      description = "HTTPS access from outside"
       cidr_blocks = "${chomp(data.http.myip.body)}/32"
     },
   ]
@@ -162,10 +162,10 @@ module "nginx_alb" {
   subnets         = module.nginx_vpc.public_subnets
   security_groups = [module.lb_security_group.security_group_id]
 
-  http_tcp_listeners = [
+  https_listeners = [
     {
-      port               = 80
-      protocol           = "HTTP"
+      port               = 443
+      protocol           = "HTTPS"
       target_group_index = 0
     }
   ]
